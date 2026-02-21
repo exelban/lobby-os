@@ -196,7 +196,17 @@ const list = {
     "name": "Netboot.xyz",
     "color": "#ffffff",
     "icon": "/presets/netbootxyz.png"
-  }
+  },
+  "adguard-home": {
+    "name": "AdGuard Home",
+    "color": "#ffffff",
+    "icon": "/presets/adguard-home.png"
+  },
+  "umami": {
+    "name": "Umami",
+    "color": "#ffffff",
+    "icon": "/presets/umami.png"
+  },
 }
 
 export default Object.keys(list).sort().reduce((acc, key) => ({ ...acc, [key]: list[key] }), {})
