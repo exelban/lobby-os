@@ -1,44 +1,44 @@
 <template>
-  <div class="fixed z-30 top-0 left-0 w-full h-full p-1 sm:p-0 flex justify-center items-center bg-neutral-500 bg-opacity-50 dark:bg-neutral-900 dark:bg-opacity-70">
+  <div class="fixed z-30 top-0 left-0 w-full h-full p-3 sm:p-0 flex justify-center items-center bg-black/30 dark:bg-black/50 backdrop-blur-sm">
     <div @click.stop class="relative w-full max-w-md max-h-full">
-      <div class="relative bg-neutral-100 rounded-lg shadow dark:bg-neutral-800">
-        <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-neutral-600">
-          <h3 class="text-xl font-medium text-neutral-900 dark:text-white">Settings</h3>
-          <button @click="store.commit('setSettingsWindow', false)" class="text-neutral-400 bg-transparent hover:bg-neutral-200 hover:text-neutral-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-neutral-600 dark:hover:text-white" data-modal-hide="small-modal">
-            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+      <div class="relative bg-white/85 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 border border-white/60 dark:border-white/10 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-neutral-200/50 dark:border-neutral-700/50">
+          <h3 class="text-lg font-semibold text-neutral-800 dark:text-white">Settings</h3>
+          <button @click="store.commit('setSettingsWindow', false)" class="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100/80 dark:hover:bg-white/10 rounded-lg transition-all duration-200">
+            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
-            <span class="sr-only">Close modal</span>
           </button>
         </div>
 
-        <div class="m-4 p-4 md:p-5 bg-white dark:bg-neutral-700 rounded-lg border border-gray-100 dark:border-neutral-800 col-span-1 sm:col-span-3 shadow grid grid-cols-2 gap-x-3 gap-y-4">
-          <div class="text-right text-neutral-600 dark:text-neutral-300">Appearance:</div>
-          <div class="flex flex-col text-neutral-700 dark:text-neutral-200">
-            <label class="flex items-center gap-2">
-              <input v-model="theme" @change="changeTheme" type="radio" name="theme" value="light"><span>Light</span>
-            </label>
-            <label class="flex items-center gap-2">
-              <input v-model="theme" @change="changeTheme" type="radio" name="theme" value="dark"><span>Dark</span>
-            </label>
-            <label class="flex items-center gap-2">
-              <input v-model="theme" @change="changeTheme" type="radio" name="theme" value="" :checked="!theme"><span>System</span>
-            </label>
+        <div class="p-5 flex flex-col gap-4">
+          <div class="bg-white/50 dark:bg-white/5 rounded-xl border border-neutral-200/50 dark:border-white/5 p-4">
+            <p class="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">Appearance</p>
+            <div class="flex gap-2">
+              <button v-for="opt in [{val: 'light', label: 'Light'}, {val: 'dark', label: 'Dark'}, {val: 'system', label: 'System'}]" :key="opt.val" @click="setTheme(opt.val)" type="button" class="flex-1 text-center py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 border" :class="theme === opt.val ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/60 dark:hover:bg-white/5'">
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white/50 dark:bg-white/5 rounded-xl border border-neutral-200/50 dark:border-white/5 p-4">
+            <p class="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">Links</p>
+            <div class="flex gap-2">
+              <button @click="download" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-all duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m0 0l-6-6m6 6l6-6"/></svg>
+                Export
+              </button>
+              <button @click="fileInput.click()" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-all duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6"/></svg>
+                Import
+              </button>
+            </div>
+            <input ref="fileInput" type="file" accept=".json" class="hidden" @change="importFile">
           </div>
         </div>
 
-        <div class="m-4 p-4 md:p-5 bg-white dark:bg-neutral-700 rounded-lg border border-gray-100 dark:border-neutral-800 col-span-1 sm:col-span-3 shadow">
-          <h1 class="mb-4">Links</h1>
-
-          <button @click="download" class="w-full px-3 py-2 text-md font-medium text-center inline-flex items-center justify-center text-white bg-blue-500 hover:bg-blue-600 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 0 24 24" width="16"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-            <span class="ml-2">Download</span>
-          </button>
-        </div>
-
-        <div class="flex items-center justify-center p-4 md:p-5 border-t border-neutral-200 rounded-b dark:border-neutral-600 text-sm">
-          <p>Version:&nbsp;</p>
-          <a href="https://github.com/exelban/jad" target="_blank" class="underline">{{ store.state.version }}</a>
+        <div class="flex items-center justify-center px-5 py-3 border-t border-neutral-200/50 dark:border-neutral-700/50 text-xs text-neutral-400 dark:text-neutral-500">
+          <a href="https://github.com/exelban/jad" target="_blank" class="hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors duration-200">JAD {{ store.state.version }}</a>
         </div>
       </div>
     </div>
@@ -51,10 +51,36 @@ import {ref} from "vue"
 import Cookies from "js-cookie"
 
 const store = useStore()
-const theme = ref(undefined)
-
 const currentClass = Cookies.get("theme")
-if (currentClass) theme.value = currentClass
+const theme = ref(currentClass || "system")
+const fileInput = ref(null)
+
+const importFile = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (evt) => {
+    try {
+      const links = JSON.parse(evt.target.result)
+      if (Array.isArray(links)) {
+        store.dispatch("importLinks", links)
+      }
+    } catch {}
+  }
+  reader.readAsText(file)
+  e.target.value = ""
+}
+
+const setTheme = (val) => {
+  theme.value = val
+  document.documentElement.classList.remove("dark", "light")
+  if (val === "system") {
+    Cookies.remove("theme")
+  } else {
+    document.documentElement.classList.add(val)
+    Cookies.set("theme", val, { expires: 7*365 })
+  }
+}
 
 const download = () => {
   const array = Object.keys(store.state.links).flatMap(k =>
@@ -66,17 +92,5 @@ const download = () => {
   document.body.appendChild(elem)
   elem.click()
   elem.remove()
-}
-const changeTheme = () => {
-  const currentActiveClass = document.documentElement.classList.contains("dark") ? "dark" : document.documentElement.classList.contains("light") ? "light" : undefined
-  const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-  if (currentActiveClass) document.documentElement.classList.remove(currentActiveClass)
-  if (theme.value) {
-    document.documentElement.classList.add(theme.value)
-    Cookies.set("theme", theme.value, { expires: 7*365 })
-  } else {
-    document.documentElement.classList.add(systemTheme)
-    Cookies.remove("theme")
-  }
 }
 </script>

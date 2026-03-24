@@ -3,13 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --bg-color-1: #F6F6F6;
-  --bg-color-2: #FFFFFF;
-  --text-color: #1E1E1E;
+  --bg-color-1: #f0f2f5;
+  --bg-color-2: #e4e7ec;
+  --bg-accent-1: #dbeafe;
+  --bg-accent-2: #fce7f3;
+  --text-color: #1a1a2e;
+  --card-bg: rgba(255, 255, 255, 0.72);
+  --card-border: rgba(255, 255, 255, 0.8);
+  --modal-bg: rgba(255, 255, 255, 0.88);
+  --toolbar-bg: rgba(255, 255, 255, 0.75);
+  --group-label: #6b7280;
 
-  --dark-bg-color-1: #282828;
-  --dark-bg-color-2: #252525;
-  --dark-text-color: #DADADB;
+  --dark-bg-color-1: #0f0f14;
+  --dark-bg-color-2: #16161d;
+  --dark-bg-accent-1: #1e3a5f;
+  --dark-bg-accent-2: #3b1f4a;
+  --dark-text-color: #e2e4e9;
+  --dark-card-bg: rgba(255, 255, 255, 0.06);
+  --dark-card-border: rgba(255, 255, 255, 0.08);
+  --dark-modal-bg: rgba(30, 30, 40, 0.92);
+  --dark-toolbar-bg: rgba(20, 20, 28, 0.8);
+  --dark-group-label: #9ca3af;
 }
 
 .light {

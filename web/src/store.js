@@ -127,7 +127,10 @@ export default new Vuex.Store({
         }
         return false
       })
-      if (!updated) shadow[""].push(link)
+      if (!updated) {
+        if (!shadow[""]) shadow[""] = []
+        shadow[""].push(link)
+      }
       return new Promise((resolve, reject) => {
         dispatch("save", shadow).then(() => {
           commit("setLinks", shadow)
@@ -189,6 +192,18 @@ export default new Vuex.Store({
     closeDelete({ commit }) {
       commit("setDeleteWindow", false)
       commit("setDeleteID", null)
+    },
+
+    async importLinks({ commit, dispatch }, links) {
+      const grouped = links.reduce((acc, obj) => {
+        const group = obj.group ?? ""
+        if (!acc[group]) acc[group] = []
+        acc[group].push(obj)
+        return acc
+      }, {})
+      return dispatch("save", grouped).then(() => {
+        commit("setLinks", grouped)
+      })
     },
 
     loadFaviconURL(_, url) {

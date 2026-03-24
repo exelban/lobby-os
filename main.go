@@ -50,6 +50,8 @@ type Link struct {
 	Group  *string `json:"group,omitempty"`
 }
 
+var faviconClient = &http.Client{Timeout: 10 * time.Second}
+
 func main() {
 	fmt.Println(version)
 
@@ -95,7 +97,6 @@ func (a *app) run(ctx context.Context) error {
 func (a *app) router() chi.Router {
 	router := chi.NewRouter()
 
-	router.Use(middleware.AllowContentType("application/x-www-form-urlencoded", "application/json"))
 	router.Use(middleware.Heartbeat("/ping"))
 	router.Use(middleware.Recoverer)
 	router.Use(rest.Logger)
@@ -107,6 +108,8 @@ func (a *app) router() chi.Router {
 	}
 
 	router.Route("/api", func(r chi.Router) {
+		r.Use(middleware.AllowContentType("application/x-www-form-urlencoded", "application/json"))
+
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			rest.JsonResponse(w, data{
 				Version: version,
@@ -145,16 +148,17 @@ func (a *app) router() chi.Router {
 		})
 	})
 
-	staticFs, _ := fs.Sub(htmlFS, "web/dist")
+	staticFs, err := fs.Sub(htmlFS, "web/dist")
+	if err != nil {
+		log.Fatalf("[FATAL] failed to create sub filesystem: %v", err)
+	}
+
+	tpl, err := template.ParseFS(htmlFS, "web/dist/index.html")
+	if err != nil {
+		log.Fatalf("[FATAL] failed to parse template: %v", err)
+	}
+
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		tpl, err := template.ParseFS(htmlFS, "web/dist/index.html")
-		if err != nil {
-			log.Printf("[ERROR] failed to parse template: %v", err)
-			rest.ErrorResponse(w, r, http.StatusInternalServerError, nil, "failed to parse template")
-			return
-		}
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
 		b, err := json.Marshal(data{
 			Version: version,
 			Links:   a.getLinks(),
@@ -164,8 +168,9 @@ func (a *app) router() chi.Router {
 			rest.ErrorResponse(w, r, http.StatusInternalServerError, nil, "failed to marshal links")
 			return
 		}
+		w.Header().Set("Content-Type", "text/html")
 		if err := tpl.Execute(w, string(b)); err != nil {
-			return
+			log.Printf("[ERROR] failed to execute template: %v", err)
 		}
 	})
 	router.Handle("/*", http.FileServer(http.FS(staticFs)))
@@ -233,7 +238,7 @@ func extractFaviconURL(siteURL string) (string, error) {
 		siteURL = "https://" + siteURL
 	}
 
-	resp, err := http.Get(siteURL)
+	resp, err := faviconClient.Get(siteURL)
 	if err != nil {
 		return "", err
 	}
@@ -263,7 +268,7 @@ func extractFaviconURL(siteURL string) (string, error) {
 			}
 			full = base.ResolveReference(rel).String()
 		}
-		head, err := http.Head(full)
+		head, err := faviconClient.Head(full)
 		if err == nil && head.StatusCode == http.StatusOK {
 			head.Body.Close()
 			return full, nil
