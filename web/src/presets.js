@@ -45,6 +45,11 @@ const list = {
     "name": "Jackett",
     "icon": "/presets/jackett.png"
   },
+  "endpoll": {
+    "name": "EndPoll",
+    "color": "#444444",
+    "icon": "/presets/endpoll.png"
+  },
   "jam": {
     "name": "JAM",
     "color": "#444444",
@@ -207,6 +212,21 @@ const list = {
     "color": "#ffffff",
     "icon": "/presets/umami.png"
   },
+  "aws-s3": {
+    "name": "AWS S3",
+    "color": "#ffffff",
+    "icon": "/presets/aws-s3.png"
+  },
+  "seerr": {
+    "name": "Seerr",
+    "color": "#2A2F3C",
+    "icon": "/presets/seerr.png"
+  },
+  "stirling-pdf": {
+    "name": "Stirling PDF",
+    "color": "#ffffff",
+    "icon": "/presets/stirling.png"
+  }
 }
 
 export default Object.keys(list).sort().reduce((acc, key) => ({ ...acc, [key]: list[key] }), {})

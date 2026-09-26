@@ -1,6 +1,6 @@
 .DS_Store
 .idea
-web/node_modules
-web/dist
+node_modules
+dist
 links.json
 .wrangler

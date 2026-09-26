@@ -1,0 +1,8 @@
+{
+  "name": "lobby-os-landing",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "deploy": "yarn build && npx wrangler pages deploy ./dist --project-name lobby-os --branch master --commit-dirty=true"
+  }
+}

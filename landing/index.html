@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A minimal, self-hosted start page for your homelab. Bring your apps together with LobbyOS. Free, open source, and easy to run with Docker.">
+  <meta name="theme-color" content="#faf9f6">
+  <meta property="og:title" content="LobbyOS — A simple start page for your homelab">
+  <meta property="og:description" content="A minimal, self-hosted start page. Organize your homelab services and run it with Docker.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lobby-os.org/">
+  <link rel="canonical" href="https://lobby-os.org/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <title>LobbyOS — A simple start page for your homelab</title>
+  <style>
+    :root { color-scheme:light; --paper:#faf9f6; --ink:#262824; --muted:#70716b; --line:#deded6; --blue:#335cff; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:32px; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+    a { color:inherit; text-underline-offset:4px; }
+    a:hover { color:var(--blue); }
+    button { font:inherit; cursor:pointer; }
+    :focus-visible { outline:2px solid var(--blue); outline-offset:5px; }
+    .wrap { width:min(960px,calc(100% - 64px)); margin-inline:auto; }
+    .skip { position:absolute; top:-60px; left:20px; padding:10px; background:var(--paper); }
+    .skip:focus { top:10px; }
+    header { display:flex; justify-content:space-between; align-items:center; padding-block:30px; border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:8px; text-decoration:none; font-size:21px; letter-spacing:-.7px; }
+    .brand img { display:block; width:125px; height:32px; }
+    .brand strong { font-weight:600; }
+    nav { display:flex; gap:25px; font-size:13px; }
+    nav a { text-decoration:none; }
+    h1,h2,p { margin:0; }
+    .hero { padding-top:61px; }
+    .hero-top { display:grid; grid-template-columns:1.25fr 1fr; gap:55px; align-items:end; margin-bottom:35px; }
+    .label { font:11px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; text-transform:uppercase; letter-spacing:1px; color:var(--muted); }
+    h1 { margin-top:17px; font-size:clamp(34px,4.5vw,49px); font-weight:550; line-height:1.12; letter-spacing:-2px; }
+    .intro { color:#555750; font-size:16px; line-height:1.65; }
+    .actions { display:flex; align-items:center; gap:22px; margin-top:23px; font-size:13px; }
+    .button { display:inline-block; padding:9px 17px; background:var(--blue); color:#fff; border:1px solid var(--blue); border-radius:5px; text-decoration:none; font-weight:500; }
+    .button:hover { background:#2548d6; color:#fff; }
+    .preview { margin:0; }
+    .preview img { display:block; width:100%; height:auto; border:1px solid #d7ddd8; border-radius:5px; }
+    figcaption { display:flex; justify-content:space-between; gap:15px; padding-block:12px; color:var(--muted); font-size:11px; }
+    .details { display:grid; grid-template-columns:1fr 2fr; gap:50px; padding-block:50px; }
+    h2 { font-size:22px; line-height:1.3; font-weight:550; letter-spacing:-.6px; }
+    .section-intro { margin-top:13px; color:var(--muted); font-size:14px; max-width:230px; }
+    dl { margin:0; }
+    .feature { display:grid; grid-template-columns:135px 1fr; gap:22px; padding-block:15px; border-top:1px solid var(--line); }
+    .feature:first-child { padding-top:0; border-top:0; }
+    dt { font-size:13px; font-weight:600; }
+    dd { margin:0; color:#62645d; font-size:13px; }
+    kbd { font:11px ui-monospace,SFMono-Regular,Consolas,monospace; border:1px solid #d6d6ce; border-radius:3px; padding:1px 4px; }
+    .install { display:grid; grid-template-columns:1fr 2fr; gap:50px; padding-block:36px 48px; border-top:1px solid var(--line); }
+    .docs { display:inline-block; margin-top:20px; font-size:12px; }
+    .terminal { min-width:0; background:#efeee8; border:1px solid #e1e0d8; border-radius:5px; }
+    .terminal-head { display:flex; justify-content:space-between; align-items:center; padding:12px 17px 0; color:var(--muted); font:11px ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .copy { padding:3px 8px; font-size:11px; color:#53554e; border:1px solid #cecec4; background:transparent; border-radius:3px; }
+    .copy:hover { background:var(--paper); }
+    pre { overflow:auto; margin:0; padding:17px; font-size:12px; line-height:1.9; }
+    code { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .terminal-foot { padding:0 17px 16px; font-size:12px; color:#62645d; }
+    footer { display:flex; justify-content:space-between; gap:20px; padding-block:22px 35px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
+    footer div { display:flex; gap:22px; }
+    footer a { text-decoration:none; }
+    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+    @media(max-width:700px) {
+      .wrap { width:calc(100% - 40px); }
+      header { padding-block:22px; }
+      nav { gap:18px; font-size:12px; }
+      .hero { padding-top:37px; }
+      .hero-top { grid-template-columns:1fr; gap:22px; margin-bottom:28px; }
+      h1 { font-size:42px; max-width:440px; }
+      .intro { max-width:440px; font-size:15px; }
+      .details,.install { grid-template-columns:1fr; gap:27px; padding-block:33px; }
+      .section-intro { max-width:100%; margin-top:8px; }
+      .feature { grid-template-columns:120px 1fr; gap:15px; }
+      .docs { margin-top:12px; }
+      footer { flex-direction:column; gap:9px; }
+    }
+    @media(max-width:380px) {
+      .wrap { width:calc(100% - 32px); }
+      nav { gap:14px; }
+      nav a:first-child { display:none; }
+      h1 { font-size:36px; }
+      .feature { grid-template-columns:1fr; gap:5px; }
+      figcaption { flex-direction:column; gap:2px; }
+      pre { font-size:11px; padding:13px; }
+    }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+  <script defer src="https://analytics.lobby-os.org/script.js" data-website-id="c25c63a6-dabb-45f0-9a44-a9aefb29ec78"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="wrap">
+    <a class="brand" href="#" aria-label="LobbyOS home"><img src="assets/logo.svg" alt="LobbyOS" width="125" height="32"></a>
+    <nav aria-label="Main navigation"><a href="#features">Features</a><a href="#install">Get started</a><a class="nav-source" href="https://github.com/exelban/lobby-os">GitHub <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main id="main" class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-top">
+        <div><p class="label">Self-hosted · Open source</p><h1 id="hero-title">A simple start page<br>for your homelab.</h1></div>
+        <div><p class="intro">Keep your services in one place. Add your links, arrange them into groups, and make it your browser’s home page.</p><div class="actions"><a class="button" href="#install">Get started</a><a href="https://demo.lobby-os.org">Try the demo ↗</a></div></div>
+      </div>
+      <figure class="preview">
+        <img src="https://serhiy.s3.eu-central-1.amazonaws.com/github/lobby-os/lobbyos-preview.webp" alt="LobbyOS start page with links to Ubiquiti, Proxmox, Home Assistant, Jellyfin, Monitoring, and Gitea" fetchpriority="high">
+        <figcaption><span>LobbyOS with a few homelab favorites.</span><span>Runs in a single Docker container.</span></figcaption>
+      </figure>
+    </section>
+    <section class="details" id="features" aria-labelledby="features-title">
+      <div><h2 id="features-title">Links, kept in order.</h2><p class="section-intro">Set it up in the browser.<br>Change it whenever you need to.</p></div>
+      <dl>
+        <div class="feature"><dt>Organize</dt><dd>Drag links into groups and put them in any order. Add group names or leave them blank.</dd></div>
+        <div class="feature"><dt>Find</dt><dd>Press <kbd>/</kbd> to search by name or hostname, then <kbd>Enter</kbd> to open the first result.</dd></div>
+        <div class="feature"><dt>Make it yours</dt><dd>50+ app presets, automatic favicons, custom colors, and light or dark themes. Adjust card sizes and links per row.</dd></div>
+        <div class="feature"><dt>Take it with you</dt><dd>Import and export your links as JSON. Use the same start page on your desktop, tablet, or phone.</dd></div>
+      </dl>
+    </section>
+    <section class="install" id="install" aria-labelledby="install-title">
+      <div><h2 id="install-title">Run it yourself.</h2><p class="section-intro">Start the container, open LobbyOS, and add your first link.</p><a class="docs" href="https://github.com/exelban/lobby-os#installation">Docker Compose &amp; documentation ↗</a></div>
+      <div class="terminal"><div class="terminal-head"><span>Docker</span><button class="copy" type="button" hidden>Copy command</button></div><pre><code id="command">docker run -d --name lobby-os \
+  -p 8080:8080 \
+  -v lobby_os_data:/srv/data \
+  exelban/lobby-os:latest</code></pre><p class="terminal-foot">Open <a href="http://localhost:8080">localhost:8080</a> to get started.</p></div>
+    </section>
+  </main>
+  <footer class="wrap"><span>Made by <a href="https://serhiy.io">exelban</a>. Free and open source.</span><div><a href="https://github.com/exelban/lobby-os?tab=MIT-1-ov-file#readme">MIT License</a><a href="https://github.com/exelban/lobby-os">Source on GitHub ↗</a></div></footer>
+  <span id="copy-status" role="status" class="sr-only"></span>
+  <script>
+    const copyButton = document.querySelector('.copy');
+    copyButton.hidden = false;
+    let resetCopy;
+    copyButton.addEventListener('click', async () => {
+      clearTimeout(resetCopy);
+      try {
+        await navigator.clipboard.writeText(document.querySelector('#command').textContent);
+        copyButton.textContent = 'Copied!';
+        document.querySelector('#copy-status').textContent = 'Docker command copied to clipboard.';
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(document.querySelector('#command'));
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        copyButton.textContent = 'Select & copy';
+        document.querySelector('#copy-status').textContent = 'Clipboard unavailable. The command is selected; use your device’s copy action.';
+      }
+      resetCopy = setTimeout(() => { copyButton.textContent = 'Copy command'; }, 2500);
+    });
+  </script>
+</body>
+</html>
