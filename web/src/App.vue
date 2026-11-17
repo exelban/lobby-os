@@ -4,7 +4,7 @@
     <input ref="searchInput" v-model="query" type="search" aria-label="Search links" placeholder="Search links or hostnames…" class="min-w-0 flex-1 bg-transparent text-sm outline-none" @keydown.escape.stop="closeSearch" @keydown.enter.prevent="openFirstResult">
     <button @click="closeSearch" aria-label="Close search" class="text-sm text-neutral-500">Esc</button>
   </div>
-  <main @click="onDashboardClick" class="min-h-dvh p-1 sm:p-2 flex flex-row justify-center items-center content-center">
+  <main @pointerdown.capture="onDashboardPointerDown" @click="onDashboardClick" class="min-h-dvh p-1 pb-24 sm:p-2 sm:pb-24 flex flex-row justify-center items-center content-center">
     <div v-if="Object.keys(store.state.links).length" class="container flex flex-col items-center gap-4 sm:gap-6">
       <div v-for="g in visibleGroups" :key="g" class="max-w-full">
         <div v-if="store.state.groupNames[g] || store.state.editMode" class="px-2 mb-2 text-center">
@@ -82,6 +82,7 @@ const searchOpen = ref(false)
 const searchInput = ref(null)
 
 let beforeDrag = null
+let startedOnBackground = false
 
 const matchesSearch = link => `${link.name} ${link.url}`.toLowerCase().includes(query.value.trim().toLowerCase())
 const visibleGroups = computed(() => Object.keys(store.state.links).filter(group =>
@@ -103,8 +104,14 @@ const finishEditing = () => {
     store.stopEditMode()
   }
 }
+const isDashboardBackground = target => !target.closest(".link-item, input, textarea, select, button, a, [contenteditable]")
+const onDashboardPointerDown = event => {
+  startedOnBackground = store.state.editMode && isDashboardBackground(event.target)
+}
 const onDashboardClick = event => {
-  if (event.target.closest(".link-item, input, textarea, select, button, a, [contenteditable]")) return
+  const shouldFinish = startedOnBackground && isDashboardBackground(event.target)
+  startedOnBackground = false
+  if (!shouldFinish) return
   finishEditing()
 }
 const cancelGroupEdit = (group, event) => {

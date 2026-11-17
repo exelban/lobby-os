@@ -11,7 +11,7 @@
 - Named or unnamed groups with inline renaming and drag-and-drop link reordering within and between groups
 - Quick search by link name or URL (`/` to open, Escape to clear)
 - Smart URL entry with suggested link names
-- 50+ built-in presets for popular apps and services (Proxmox, Home Assistant, Jellyfin, Grafana, Pi-hole, Seerr, Stirling PDF, AWS S3, and more)
+- Built-in presets for self-hosted apps, online services, and websites (Proxmox, Home Assistant, Jellyfin, Grafana, Pi-hole, Seerr, Stirling PDF, AWS S3, and more)
 - Automatic favicon extraction from linked URLs
 - Custom colors with full-color or translucent link cards
 - Small, medium, or large cards with automatic or custom links per row
