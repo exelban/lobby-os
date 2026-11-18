@@ -29,44 +29,100 @@ const randomColor = () => {
 }
 const demo = [
   {
-    id: "ubiquiti",
-    name: "UniFi",
-    url: "https://ui.com",
-    preset: "unifi"
-  },
-  {
     id: "proxmox",
     name: "Proxmox",
     url: "https://www.proxmox.com/en/",
-    preset: "proxmox"
+    preset: "proxmox",
+    group: "infrastructure",
+    groupName: "Infrastructure"
   },
   {
-    id: "EndPoll",
-    name: "EndPoll",
-    url: "https://endpoll.com",
-    preset: "endpoll",
-    group: "dev",
-    groupName: "",
+    id: "unifi",
+    name: "UniFi",
+    url: "https://ui.com",
+    preset: "unifi",
+    group: "infrastructure",
+    groupName: "Infrastructure"
   },
   {
     id: "hass",
     name: "Home Assistant",
     url: "https://demo.home-assistant.io/",
-    preset: "hass"
+    preset: "hass",
+    group: "infrastructure",
+    groupName: "Infrastructure"
+  },
+  {
+    id: "portainer",
+    name: "Portainer",
+    url: "https://www.portainer.io",
+    preset: "portainer",
+    group: "infrastructure",
+    groupName: "Infrastructure"
+  },
+  {
+    id: "seerr",
+    name: "Seerr",
+    url: "https://seerr.dev",
+    preset: "seerr",
+    group: "media",
+    groupName: "Media"
+  },
+  {
+    id: "sonarr",
+    name: "Sonarr",
+    url: "https://sonarr.tv",
+    preset: "sonarr",
+    group: "media",
+    groupName: "Media"
+  },
+  {
+    id: "radarr",
+    name: "Radarr",
+    url: "https://radarr.video",
+    preset: "radarr",
+    group: "media",
+    groupName: "Media"
   },
   {
     id: "jellyfin",
     name: "Jellyfin",
     url: "https://jellyfin.org",
-    preset: "jellyfin"
+    preset: "jellyfin",
+    group: "media",
+    groupName: "Media"
   },
   {
     id: "gitea",
     name: "Gitea",
-    url: "https://gitea.io",
+    url: "https://gitea.com",
     preset: "gitea",
-    group: "dev",
-    groupName: "",
+    group: "tools",
+    groupName: "Tools"
+  },
+  {
+    id: "grafana",
+    name: "Grafana",
+    url: "https://grafana.com",
+    preset: "grafana",
+    group: "tools",
+    groupName: "Tools"
+  },
+  {
+    id: "paperless",
+    name: "Paperless",
+    url: "https://docs.paperless-ngx.com",
+    preset: "paperless",
+    group: "tools",
+    groupName: "Tools"
+  },
+  {
+    id: "vaultwarden",
+    name: "Vaultwarden",
+    url: "https://github.com/dani-garcia/vaultwarden",
+    preset: "vaultwarden",
+    group: "tools",
+    groupName: "Tools"
   }
 ]
 
@@ -91,6 +147,16 @@ const state = reactive({
   background: normalizeBackground(readPreference("background")),
 })
 
+const syncThemeColor = () => {
+  const styles = getComputedStyle(document.documentElement)
+  for (const mode of ["light", "dark"]) {
+    const meta = document.querySelector(`meta[name="theme-color"][data-theme="${mode}"]`)
+    if (!meta) continue
+    meta.content = styles.getPropertyValue(mode === "dark" ? "--dark-bg-color" : "--bg-color").trim()
+    meta.media = state.theme === "system" ? `(prefers-color-scheme: ${mode})` : state.theme === mode ? "all" : "not all"
+  }
+}
+
 const store = {
   state,
   get exportLinks() { return flattenLinks(state.links, state.groupNames) },
@@ -101,15 +167,22 @@ const store = {
     state.theme = ["light", "dark"].includes(value) ? value : "system"
     document.documentElement.classList.remove("light", "dark")
     if (state.theme !== "system") document.documentElement.classList.add(state.theme)
+    syncThemeColor()
     writePreference("theme", state.theme)
   },
   setBackground(value) {
     state.background = normalizeBackground(value)
-    document.body.dataset.background = state.background
+    document.documentElement.dataset.background = state.background
+    syncThemeColor()
     writePreference("background", state.background)
   },
   initialize(data) {
     state.version = data.version
+    if (state.version === "demo") {
+      if (readPreference("background") === null) state.background = "aurora"
+      if (readPreference("fullCardColor") === null) state.fullCardColor = false
+      if (readPreference("linksPerRow") === null) state.linksPerRow = 4
+    }
     state.links = groupLinks(state.version === "demo" ? demo : (data.links ?? []))
     state.groupNames = groupNames(state.links)
   },

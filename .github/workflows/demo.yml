@@ -1,0 +1,43 @@
+name: Demo
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - web/**
+      - .github/workflows/demo.yml
+  push:
+    branches: [master]
+    paths:
+      - web/**
+      - .github/workflows/demo.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Set up Yarn
+        run: npm install --global yarn@1.22.22
+      - name: Install dependencies
+        run: yarn --cwd web install --frozen-lockfile --non-interactive
+      - name: Build demo
+        run: yarn --cwd web build
+      - name: Deploy demo
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy web/dist --project-name demo-lobby-os --branch master

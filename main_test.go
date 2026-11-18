@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -83,6 +85,33 @@ func TestLegacyLinks(t *testing.T) {
 	}
 }
 
+func TestDashboardCaching(t *testing.T) {
+	assets, err := fs.Glob(htmlFS, "web/dist/assets/*.js")
+	if err != nil || len(assets) == 0 {
+		t.Fatalf("missing built assets: %v", err)
+	}
+	a := &app{linksPath: filepath.Join(t.TempDir(), "links.json")}
+	router := a.router()
+	for _, tc := range []struct {
+		path   string
+		status int
+		cache  string
+	}{
+		{"/", http.StatusOK, "no-cache"},
+		{"/manifest.json", http.StatusOK, "no-cache"},
+		{strings.TrimPrefix(assets[0], "web/dist"), http.StatusOK, "public, max-age=31536000, immutable"},
+		{"/assets/missing.js", http.StatusNotFound, ""},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, tc.path, nil))
+			if w.Code != tc.status || w.Header().Get("Cache-Control") != tc.cache {
+				t.Fatalf("status %d, cache %q", w.Code, w.Header().Get("Cache-Control"))
+			}
+		})
+	}
+}
+
 func TestRunReturnsListenError(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -131,12 +160,116 @@ func TestExtractFaviconURL(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := extractFaviconURL(server.URL)
+			got, err := extractFaviconURL(context.Background(), server.URL)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if want := server.URL + tc.want; got != want {
 				t.Fatalf("got %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestFaviconHead(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		page string
+		want string
+	}{
+		{"rel tokens", `<head><link rel="alternate ICON" href=" /site.png "></head>`, "/site.png"},
+		{"head only", `<head></head><body><link rel="icon" href="/site.png"></body>`, "/favicon.ico"},
+		{"implicit head end", `<body><link rel="icon" href="/site.png"></body>`, "/favicon.ico"},
+		{"read limit", "<head>" + strings.Repeat(" ", 1<<20) + `<link rel="icon" href="/site.png"></head>`, "/favicon.ico"},
+		{"unsupported scheme", `<head><link rel="icon" href="data:image/png;base64,AAAA"></head>`, "/favicon.ico"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet {
+					fmt.Fprint(w, tc.page)
+				}
+			}))
+			defer server.Close()
+
+			got, err := extractFaviconURL(context.Background(), server.URL)
+			if err != nil || got != server.URL+tc.want {
+				t.Fatalf("got %q, error %v", got, err)
+			}
+		})
+	}
+}
+
+func TestFaviconErrorPageFallback(t *testing.T) {
+	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodHead && r.URL.Path == "/favicon.ico" {
+					return
+				}
+				w.WriteHeader(status)
+				w.(http.Flusher).Flush()
+				<-r.Context().Done()
+			}))
+			defer server.Close()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			got, err := extractFaviconURL(ctx, server.URL+"/protected")
+			if err != nil || got != server.URL+"/favicon.ico" {
+				t.Fatalf("got %q, error %v", got, err)
+			}
+		})
+	}
+}
+
+func TestFaviconStreaming(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			return
+		}
+		fmt.Fprint(w, `<head><link rel="icon" href="/site.png">`)
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	got, err := extractFaviconURL(ctx, server.URL)
+	if err != nil || got != server.URL+"/site.png" {
+		t.Fatalf("got %q, error %v", got, err)
+	}
+}
+
+func TestFaviconCancellation(t *testing.T) {
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		t.Run(method, func(t *testing.T) {
+			started := make(chan struct{})
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == method {
+					close(started)
+					<-r.Context().Done()
+					return
+				}
+				fmt.Fprint(w, `<head><link rel="icon" href="/site.png"></head>`)
+			}))
+			defer server.Close()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			done := make(chan error, 1)
+			go func() {
+				_, err := extractFaviconURL(ctx, server.URL)
+				done <- err
+			}()
+			select {
+			case <-started:
+				cancel()
+			case <-ctx.Done():
+				t.Fatal("favicon request did not start")
+			}
+			if err := <-done; !errors.Is(err, context.Canceled) {
+				t.Fatalf("expected cancellation, got %v", err)
 			}
 		})
 	}

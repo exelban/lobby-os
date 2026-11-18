@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -19,11 +20,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/pkgz/rest"
 	"github.com/pkgz/service"
+	"golang.org/x/net/html"
 )
 
 var (
@@ -140,7 +141,7 @@ func (a *app) router() chi.Router {
 				return
 			}
 
-			faviconURL, err := extractFaviconURL(uri)
+			faviconURL, err := extractFaviconURL(r.Context(), uri)
 			if err != nil {
 				log.Printf("[ERROR] failed to extract favicon: %v", err)
 				rest.ErrorResponse(w, r, http.StatusInternalServerError, nil, "failed to extract favicon")
@@ -164,6 +165,7 @@ func (a *app) router() chi.Router {
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Cache-Control", "no-cache")
 		if err := tpl.Execute(w, data{
 			Version: version,
 			Links:   a.readLinks(),
@@ -171,7 +173,16 @@ func (a *app) router() chi.Router {
 			log.Printf("[ERROR] failed to execute template: %v", err)
 		}
 	})
-	router.Handle("/*", http.FileServer(http.FS(staticFs)))
+	static := http.FileServer(http.FS(staticFs))
+	router.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache")
+		if strings.HasPrefix(r.URL.Path, "/assets/") {
+			if info, err := fs.Stat(staticFs, strings.TrimPrefix(r.URL.Path, "/")); err == nil && info.Mode().IsRegular() {
+				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			}
+		}
+		static.ServeHTTP(w, r)
+	}))
 
 	return router
 }
@@ -246,26 +257,64 @@ func (a *app) writeLinks(links []Link) error {
 	return os.Rename(file.Name(), a.linksPath)
 }
 
-func extractFaviconURL(siteURL string) (string, error) {
+func extractFaviconURL(ctx context.Context, siteURL string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	if !strings.HasPrefix(siteURL, "http://") && !strings.HasPrefix(siteURL, "https://") {
 		siteURL = "https://" + siteURL
 	}
 
-	resp, err := faviconClient.Get(siteURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, siteURL, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := faviconClient.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
 	candidates := []string{}
-	if favicon, ok := doc.Find("link[rel='icon'], link[rel='shortcut icon'], link[rel='apple-touch-icon']").Attr("href"); ok && favicon != "" {
-		candidates = append(candidates, favicon)
+	tokenizer := html.NewTokenizer(io.LimitReader(resp.Body, 1<<20))
+readHead:
+	for resp.StatusCode == http.StatusOK {
+		switch tokenizer.Next() {
+		case html.ErrorToken:
+			if err := tokenizer.Err(); err != io.EOF {
+				return "", err
+			}
+			break readHead
+		case html.EndTagToken:
+			if tokenizer.Token().Data == "head" {
+				break readHead
+			}
+		case html.StartTagToken, html.SelfClosingTagToken:
+			token := tokenizer.Token()
+			if token.Data == "body" {
+				break readHead
+			}
+			if token.Data != "link" {
+				continue
+			}
+			var rel, href string
+			for _, attr := range token.Attr {
+				switch attr.Key {
+				case "rel":
+					rel = attr.Val
+				case "href":
+					href = strings.TrimSpace(attr.Val)
+				}
+			}
+			for value := range strings.FieldsSeq(strings.ToLower(rel)) {
+				if href != "" && (value == "icon" || value == "apple-touch-icon") {
+					candidates = append(candidates, href)
+					break readHead
+				}
+			}
+		}
 	}
+	resp.Body.Close()
 	candidates = append(candidates, "/favicon.ico", "/apple-touch-icon.png", "/favicon.png")
 
 	base := resp.Request.URL
@@ -274,13 +323,23 @@ func extractFaviconURL(siteURL string) (string, error) {
 		if err != nil {
 			continue
 		}
-		full := base.ResolveReference(rel).String()
-		head, err := faviconClient.Head(full)
+		full := base.ResolveReference(rel)
+		if full.Scheme != "http" && full.Scheme != "https" {
+			continue
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodHead, full.String(), nil)
+		if err != nil {
+			continue
+		}
+		head, err := faviconClient.Do(req)
 		if head != nil && head.Body != nil {
 			head.Body.Close()
 		}
 		if err == nil && head.StatusCode == http.StatusOK {
-			return full, nil
+			return full.String(), nil
+		}
+		if err := ctx.Err(); err != nil {
+			return "", err
 		}
 	}
 

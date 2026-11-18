@@ -1,6 +1,6 @@
 <template>
   <div class="contents" @click="emit('select')">
-    <button @click="emit('search')" title="Search links (/)" aria-label="Search links" class="toolbar-button toolbar-neutral">
+    <button @click="emit('search')" data-search-toggle title="Search links (/)" aria-label="Search links" class="toolbar-button toolbar-neutral">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><path stroke-linecap="round" d="m16 16 4.5 4.5"/></svg>
     </button>
     <button @click="(store.state.window.settings = true)" title="Settings" class="toolbar-button toolbar-neutral">

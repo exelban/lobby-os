@@ -3,14 +3,13 @@ module lobby-os
 go 1.27
 
 require (
-	github.com/PuerkitoBio/goquery v1.13.0
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/pkgz/rest v0.0.24
 	github.com/pkgz/service v0.1.2
+	golang.org/x/net v0.58.0
 )
 
 require (
-	github.com/andybalholm/cascadia v1.3.4 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
@@ -41,7 +40,6 @@ require (
 	go.mongodb.org/mongo-driver/v2 v2.7.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect

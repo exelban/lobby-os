@@ -1,7 +1,9 @@
 FROM exelban/baseimage:node-latest AS web
 WORKDIR /app/
+COPY ./web/package.json ./web/yarn.lock ./
+RUN yarn --frozen-lockfile --non-interactive
 COPY ./web .
-RUN yarn && yarn build
+RUN yarn build
 
 FROM exelban/baseimage:golang-latest AS build
 
